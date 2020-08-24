@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="3ed820da-cee8-40c7-be6f-0ad15e5dd572" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="380b310b-05b7-4a08-8bd5-29737d5af69a" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="Mounika@1303" database="mule_DB" />
+	</db:config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="61d1606a-3ff1-4bbe-827a-c083c195f03b" >
+		<file:connection workingDir="/Users/mounikad/Desktop/mulesoft/day7_assignment/errorContinue_propogate/Input" />
+	</file:config>
+	<file:config name="File_Config1" doc:name="File Config" doc:id="d34d7ef1-561e-4ced-a452-70bde61dda13" >
+		<file:connection workingDir="/Users/mounikad/Desktop/mulesoft/day7_assignment/errorContinue_propogate/Archive" />
+	</file:config>
+	<flow name="errorcontinue_propogateFlow" doc:id="2ab4030e-2b02-4492-b77e-8eea6c206481" >
+		<http:listener doc:name="Listener" doc:id="0dc8c16b-bb3e-4252-ba4d-a44346568f83" config-ref="HTTP_Listener_config" path="/errorContinue-propogate"/>
+		<flow-ref doc:name="Flow1" doc:id="c5ae2ee1-9249-4400-9633-12b205707480" name="errorcontinue_propogateFlow1"/>
+		<logger level="INFO" doc:name="Logger" doc:id="bd9205e8-f77d-40ad-9204-b845016537b4" message="flow 1 completed" />
+		<flow-ref doc:name="Flow2" doc:id="8bc75fed-85cb-433e-acb6-0a533cac53c5" name="errorcontinue_propogateFlow2"/>
+		<logger level="INFO" doc:name="Logger" doc:id="46258dc4-1166-439d-9b55-1249dff3cab6" message="flow 2 completed"/>
+		<error-handler>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="5184f7fc-eaf2-4b6f-a10e-d729f1d8f419" type="FILE:ACCESS_DENIED, FILE:CONNECTIVITY, FILE:FILE_ALREADY_EXISTS, FILE:FILE_LOCK, FILE:ILLEGAL_CONTENT, FILE:ILLEGAL_PATH, FILE:RETRY_EXHAUSTED, EXPRESSION, STREAM_MAXIMUM_SIZE_EXCEEDED">
+				<logger level="INFO" doc:name="Logger" doc:id="ed3effe4-a52b-4b23-918d-6c3a7d6e16f2" message="error in flow 1"/>
+			</on-error-continue>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="080c129d-239a-473e-8fbe-7cc40e216442" type="DB:BAD_SQL_SYNTAX, DB:CONNECTIVITY, DB:QUERY_EXECUTION, DB:RETRY_EXHAUSTED">
+				<logger level="INFO" doc:name="Logger" doc:id="4add5c6c-3e09-4d63-a98b-642c308e6a1a" message="error in flow 2"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="errorcontinue_propogateFlow1" doc:id="fbbe8130-7e4b-43c4-902b-4e375b7551eb" >
+		<file:read doc:name="Read" doc:id="c530aa89-10d4-4481-a16f-dc9c6bf51d97" config-ref="File_Config" path="/Users/mounikad/Desktop/mulesoft/day7_assignment/errorContinue_propogate/Input/file1.csv"/>
+		<file:write doc:name="Write" doc:id="65daf2eb-e9b9-44b9-96e6-eaccbd5f092f" config-ref="File_Config1" path="/Users/mounikad/Desktop/mulesoft/day7_assignment/errorContinue_propogate/Archive/copyfile1.csv"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="4d695e57-7b5d-43cf-bc47-3def1bc682ca" type="ANY">
+				<logger level="INFO" doc:name="Logger" doc:id="35ae69c5-f651-4513-9f28-93bcba614d4b" message="error with reading a file"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="errorcontinue_propogateFlow2" doc:id="2a2f8313-e952-4063-a5af-61c2218e80d6" >
+		<file:read doc:name="Read" doc:id="14c88614-5111-4d02-a7b2-b93d99a0cb6a" path="/Users/mounikad/Desktop/mulesoft/day7_assignment/errorContinue_propogate/Input2/file1.csv" config-ref="File_Config" />
+		<ee:transform doc:name="Transform Message" doc:id="cfb123cf-1077-4817-99ee-d6e4d6fb9349">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="d0481d56-a5fb-445e-be20-4c282708a2b1">
+			<db:insert doc:name="Insert" doc:id="606f9817-a408-4f1f-ae50-1639679641ab" config-ref="Database_Config">
+			<db:sql><![CDATA[INSERT INTO mule_DB.employee(`id`,`name`,`department`,`location`)
+VALUES (:id,:name,:department,:location)]]></db:sql>
+			<db:input-parameters><![CDATA[#[{id:payload.id,name:payload.name,department:payload.department,location:payload.location}]]]></db:input-parameters>
+		</db:insert>
+		</foreach>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a6c09670-3b66-4b50-a284-be6f329381f8" type="DB:BAD_SQL_SYNTAX, DB:CONNECTIVITY, DB:QUERY_EXECUTION, DB:RETRY_EXHAUSTED">
+				<logger level="INFO" doc:name="Logger" doc:id="6e0560c3-c3f7-47dc-88e3-00924a3a19f1" message="error with db"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>
